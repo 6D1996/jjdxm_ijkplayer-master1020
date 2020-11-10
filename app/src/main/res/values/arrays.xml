@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="Video_Model">
+        <item>原始视频</item>
+        <item>融合视频</item>
+    </string-array>
+</resources>

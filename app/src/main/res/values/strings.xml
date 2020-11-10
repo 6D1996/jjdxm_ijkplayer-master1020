@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">ijkplayer</string>
+    <string name="qian">前视角</string>
+    <string name="hou">后视角</string>
+    <string name="zuo">左视角</string>
+    <string name="you">右视角</string>
+    <string name="shangdi">上帝视角</string>
+
+    <drawable name="clr_normal">#ff6501</drawable>
+    <drawable name="clr_pressed">#52C2EC</drawable>
+</resources>

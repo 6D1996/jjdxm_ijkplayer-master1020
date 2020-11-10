@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:screenOrientation="portrait"
+    tools:context=".MainActivity">
+
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/constraintlayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/constraintlayout2"
+        >
+        <include
+            layout="@layout/simple_player_view_player"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"/>
+    </android.support.constraint.ConstraintLayout>
+
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/constraintlayout2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@drawable/background"
+        android:scaleType="fitXY"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/constraintlayout1">
+        <Button
+            android:id="@+id/lightController"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="測試"
+            android:background="@drawable/ratio_check"
+            tools:ignore="MissingConstraints"></Button>
+
+
+
+        <com.dou361.jjdxm_ijkplayer.MyRadioGroup
+            android:id="@+id/radiogroup"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            >
+                <RadioButton
+                    android:id="@+id/front_Click"
+                    android:layout_width="80dp"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:background="@drawable/ratio_check"
+                    android:text="@string/qian"
+                    android:layout_gravity="center"
+                    android:button="@null">
+                </RadioButton>
+
+            <TextView
+                android:id="@+id/requestTextView"
+                android:hint="發送數據"
+                android:gravity="center"
+                android:layout_gravity="center_horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"></TextView>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="209dp"
+                android:layout_marginTop="50dp"
+                android:layout_marginBottom="50dp"
+                android:gravity="center">
+
+                <RadioButton
+                    android:id="@+id/left_Click"
+                    android:layout_width="80dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/ratio_check"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:text="@string/zuo"></RadioButton>
+
+                <RadioButton
+                    android:id="@+id/god_perspective_Click"
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:layout_margin="50dp"
+                    android:background="@drawable/center_shape"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:text="@string/shangdi"></RadioButton>
+
+                <RadioButton
+                    android:id="@+id/right_Click"
+                    android:layout_width="80dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/ratio_check"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:text="@string/you"></RadioButton>
+            </LinearLayout>
+            <TextView
+                android:id="@+id/replyTextView"
+                android:hint="接收數據"
+                android:gravity="center"
+                android:layout_gravity="center_horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"></TextView>
+
+
+            <RadioButton
+                    android:id="@+id/back_Click"
+                android:layout_width="80dp"
+                android:layout_height="40dp"
+                android:gravity="center"
+                    android:background="@drawable/ratio_check"
+                    android:text="@string/hou"
+                    android:button="@null">
+                </RadioButton>
+
+
+
+            </com.dou361.jjdxm_ijkplayer.MyRadioGroup>
+        </android.support.constraint.ConstraintLayout>
+</android.support.constraint.ConstraintLayout>
