@@ -144,7 +144,7 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
     public void postVideoRequest(){}
 
 
-    @OnClick({R.id.front_Click, R.id.back_Click, R.id.left_Click, R.id.right_Click,R.id.god_perspective_Click,R.id.lightController})
+    @OnClick({R.id.lightController})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.lightController:
