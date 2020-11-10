@@ -141,9 +141,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
 
     }
 
-    public void postVideoRequest(){}
-
-
     @OnClick({R.id.front_Click, R.id.back_Click, R.id.left_Click, R.id.right_Click,R.id.god_perspective_Click,R.id.lightController})
     public void onClick(View view) {
         switch (view.getId()) {
@@ -459,9 +456,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         }
     }
 
-
-
-
     @Override
     protected void onPause() {
         super.onPause();
@@ -471,7 +465,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         /**demo的内容，恢复系统其它媒体的状态*/
         MediaUtils.muteAudioFocus(mContext, true);
     }
-
 
     @Override
     protected void onResume() {
@@ -515,9 +508,12 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         }
     }
 
-
     @Override
     public void onCheckedChanged(MyRadioGroup group, int checkedId) {
 
     }
+
+    public void postVideoRequest(){}
+
+    public void playVideo(){}
 }
