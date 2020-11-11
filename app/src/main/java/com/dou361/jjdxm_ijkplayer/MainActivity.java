@@ -142,6 +142,24 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
     }
 
     public void postVideoRequest(){}
+    public void playVideo(int videoNum){
+        switch (videoNum){
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+            case 4:
+                break;
+            case 5:
+                break;
+            case 6:
+                break;
+            default:
+                break;
+        }
+    }
 
 
     @OnClick({R.id.lightController})
@@ -247,7 +265,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                             .setPlaySource(list)
                             .startPlay();
                     }
-
             break;
 
             case R.id.back_Click:
