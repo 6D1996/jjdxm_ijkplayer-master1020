@@ -40,6 +40,7 @@ import okhttp3.Response;
 
 public class MainActivity extends Activity implements View.OnClickListener , MyRadioGroup.OnCheckedChangeListener {
 
+    public String hostURL="http://192.168.137.132:18086/appBackend/";
     public VideoRequest videoRequest;
     public VideoReply videoReply;
     private PlayerView player;
@@ -157,10 +158,9 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                     requestTextView.setText(videoRequestJson);
                     OkHttpClient videoClient=new OkHttpClient();
                     Request videoRequest= new Request.Builder()
-                            .url("http://192.168.137.132:18086/appBackend/videoRequest")
+                            .url(hostURL+"videoRequest")
                             .post(RequestBody.create(MediaType.parse("application/json"),videoRequestJson))
                             .build();//创造HTTP请求
-                    replyTextView.setText("12");
                     //执行发送的指令
                     Response videoResponse = videoClient.newCall(videoRequest).execute();
                     String videoResponseString=videoResponse.body().string();
