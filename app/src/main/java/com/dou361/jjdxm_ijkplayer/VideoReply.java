@@ -3,8 +3,10 @@ package com.dou361.jjdxm_ijkplayer;
 public class VideoReply {
     private String requestId,userId,vin,code,message,videoUrl;
 
-    public VideoReply() {
+    public VideoReply(String userId) {
+        this.userId = userId;
     }
+
 
     public String getVideoUrl() {
         return videoUrl;
@@ -64,5 +66,12 @@ public class VideoReply {
                 ", message='" + message + '\'' +
                 ", videoUrl='" + videoUrl + '\'' +
                 '}';
+    }
+    public void initialVideoReply(){
+        String initialString="initialString";
+        this.code=initialString;
+        this.message=initialString;
+        this.userId="6DAndroid";
+        this.videoUrl=initialString;
     }
 }

@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.Log;
@@ -25,7 +24,6 @@ import com.dou361.ijkplayer.widget.PlayStateParams;
 import com.dou361.ijkplayer.widget.PlayerView;
 import com.dou361.jjdxm_ijkplayer.utlis.MediaUtils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +38,7 @@ import okhttp3.Response;
 
 public class MainActivity extends Activity implements View.OnClickListener , MyRadioGroup.OnCheckedChangeListener {
 
-    public String hostURL="http://192.168.137.132:18086/appBackend/";
+    public String hostURL="http://10.6.206.20:30549/appBackend/";
     public VideoRequest videoRequest;
     public VideoReply videoReply;
     private PlayerView player;
@@ -119,24 +117,39 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
             public void onCheckedChanged(MyRadioGroup group, int checkedId) {
                 switch (checkedId){
                     case R.id.left_Click:
+                        playVideo(3);
                         Toast leftToast =Toast.makeText(MainActivity.this, "左", Toast.LENGTH_SHORT);
                         new ShowMyToast().showMyToast(leftToast,100);
                         break;
                     case R.id.right_Click:
+                        playVideo(4);
                         Toast rightToast =Toast.makeText(MainActivity.this, "右", Toast.LENGTH_SHORT);
                         new ShowMyToast().showMyToast(rightToast,100);
                         break;
                     case R.id.front_Click:
-                        Toast frontToast =Toast.makeText(MainActivity.this, "前", Toast.LENGTH_SHORT);
-                        new ShowMyToast().showMyToast(frontToast,100);
+                        videoReply=new VideoReply("6D");
+                        videoReply.initialVideoReply();
+                        videoReply = postVideoRequest(1);
+                        if(videoReply.getCode().equals("0030000")){
+                        playVideo(1);}
+                        else {
+                            Toast frontToast = Toast.makeText(MainActivity.this,"播放失败", Toast.LENGTH_SHORT);
+                            new ShowMyToast().showMyToast(frontToast, 100);
+                        }
                         break;
                     case R.id.back_Click:
+                        playVideo(2);
                         Toast backToast =Toast.makeText(MainActivity.this, "后", Toast.LENGTH_SHORT);
                         new ShowMyToast().showMyToast(backToast,100);
                         break;
                     case R.id.god_perspective_Click:
+                        playVideo(5);
                         Toast godPerspectiveToast =Toast.makeText(MainActivity.this, "上帝", Toast.LENGTH_SHORT);
                         new ShowMyToast().showMyToast(godPerspectiveToast,100);
+                        break;
+                    default:
+                        Toast defualt =Toast.makeText(MainActivity.this, "上帝", Toast.LENGTH_SHORT);
+                        new ShowMyToast().showMyToast(defualt,100);
                         break;
                 }
             }
@@ -148,7 +161,7 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         videoRequest = new VideoRequest();
         videoRequest.setUserId("6D");
         videoRequest.setVin("test");
-        videoRequest.setVideo_type(getString(videoNum));
+        videoRequest.setVideo_type(Integer.toString(videoNum));
         videoRequest.setServicetype("1");
         final String videoRequestJson = JSON.toJSONString(videoRequest);
         new Thread(new Runnable() {
@@ -188,12 +201,93 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         }).start();
         return videoReply;
     }
+
+    public void playVideoUrl( String url){
+
+      Toast.makeText(MainActivity.this, "請求成功！", Toast.LENGTH_SHORT).show();
+      player = new PlayerView(MainActivity.this, rootView)
+              .setPlaySource(url)
+              //.setTitle("前摄像")
+              .setProcessDurationOrientation(PlayStateParams.PROCESS_PORTRAIT)
+              .setScaleType(PlayStateParams.fillparent) //视频界面剪裁设置
+              .forbidTouch(false)
+              .hideSteam(true)
+              .hideMenu(true)
+              .hideCenterPlayer(false)
+              .setNetWorkTypeTie(false)
+              .hideRotation(true) //隐藏旋转按钮
+              .setChargeTie(true, 10)//设置最长播放时间
+              .showThumbnail(new OnShowThumbnailListener() {
+                  @Override
+                  public void onShowThumbnail(ImageView ivThumbnail) {
+//                                 加载前显示的缩略图
+                      Glide.with(mContext)
+                              .load(R.mipmap.pic_before_video)//"http://cn.bing.com/az/hprichbg/rb/Dongdaemun_ZH-CN10736487148_1920x1080.jpg"
+                              .placeholder(R.mipmap.pic_before_video) //加载成功之前占位图
+                              .error(R.color.cl_error)//加载错误之后的错误图
+                              .into(ivThumbnail);
+                  }
+              })
+              .setPlaySource(list)
+              .startPlay();
+
+    }
+
     public void playVideo(int videoNum){
 
         switch (videoNum){
             case 1:
+                Toast.makeText(MainActivity.this,"請求成功！",Toast.LENGTH_SHORT).show();
+                list = new ArrayList<VideoijkBean>();
+                //有部分视频加载有问题，这个视频是有声音显示不出图像的，没有解决http://fzkt-biz.oss-cn-hangzhou.aliyuncs.com/vedio/2f58be65f43946c588ce43ea08491515.mp4
+                //这里模拟一个本地视频的播放，视频需要将testvideo文件夹的视频放到安卓设备的内置sd卡根目录中
+                String url1 = "rtmp://202.69.69.180:443/webcast/bshdlive-pc";//"";//"rtmp://150.158.176.170/live/1";
+                String url2 = "rtmp://202.69.69.180:443/webcast/bshdlive-pc";
+                VideoijkBean m1 = new VideoijkBean();
+                m1.setStream("原始视频");
+                m1.setUrl(url1);
+                VideoijkBean m2 = new VideoijkBean();
+                m2.setStream("融合视频");
+                m2.setUrl(url2);
+                list.add(m1);
+                list.add(m2);
+                player = new PlayerView(this, rootView) {
+                    //                        @Override
+//                        public PlayerView toggleProcessDurationOrientation() {
+////                            hideSteam(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+//                            return setProcessDurationOrientation(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? PlayStateParams.PROCESS_PORTRAIT : PlayStateParams.PROCESS_LANDSCAPE);
+//                        }
+                    @Override
+                    public PlayerView setPlaySource(List<VideoijkBean> list) {
+                        return super.setPlaySource(list);
+                    }
+                }
+                        //.setTitle("前摄像")
+                        .setProcessDurationOrientation(PlayStateParams.PROCESS_PORTRAIT)
+                        .setScaleType(PlayStateParams.fillparent) //视频界面剪裁设置
+                        .forbidTouch(false)
+                        .hideSteam(false)
+                        .hideMenu(true)
+                        .hideCenterPlayer(true)
+                        .setNetWorkTypeTie(false)
+                        .hideRotation(true) //隐藏旋转按钮
+                        .setChargeTie(true,480)//设置最长播放时间
+                        .showThumbnail(new OnShowThumbnailListener() {
+                            @Override
+                            public void onShowThumbnail(ImageView ivThumbnail) {
+//                                 加载前显示的缩略图
+                                Glide.with(mContext)
+                                        .load(R.mipmap.pic_before_video)//"http://cn.bing.com/az/hprichbg/rb/Dongdaemun_ZH-CN10736487148_1920x1080.jpg"
+                                        .placeholder(R.mipmap.pic_before_video) //加载成功之前占位图
+                                        .error(R.color.cl_error)//加载错误之后的错误图
+                                        .into(ivThumbnail);
+                            }
+                        })
+                        .setPlaySource(list)
+                        .startPlay();
                 break;
             case 2:
+                playVideoUrl("http://ivi.bupt.edu.cn/hls/cctv2.m3u8");
                 break;
             case 3:
                 break;
@@ -214,56 +308,9 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         switch (view.getId()) {
             case R.id.lightController:
                 {   
-//                    postVideoRequest(1);
+                    postVideoRequest(1);
 //                    if(videoReply.getCode()=="0051000")
-                    Toast.makeText(MainActivity.this,"請求成功！",Toast.LENGTH_SHORT).show();
-                    list = new ArrayList<VideoijkBean>();
-                    //有部分视频加载有问题，这个视频是有声音显示不出图像的，没有解决http://fzkt-biz.oss-cn-hangzhou.aliyuncs.com/vedio/2f58be65f43946c588ce43ea08491515.mp4
-                    //这里模拟一个本地视频的播放，视频需要将testvideo文件夹的视频放到安卓设备的内置sd卡根目录中
-                    String url1 = "rtmp://202.69.69.180:443/webcast/bshdlive-pc";//"rtmp://150.158.176.170/live/1";
-                    String url2 = "rtmp://150.158.176.170/live/test";
-                    VideoijkBean m1 = new VideoijkBean();
-                    m1.setStream("原始视频");
-                    m1.setUrl(url1);
-                    VideoijkBean m2 = new VideoijkBean();
-                    m2.setStream("融合视频");
-                    m2.setUrl(url2);
-                    list.add(m1);
-                    list.add(m2);
-                    player = new PlayerView(this, rootView) {
-                        //                        @Override
-//                        public PlayerView toggleProcessDurationOrientation() {
-////                            hideSteam(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-//                            return setProcessDurationOrientation(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? PlayStateParams.PROCESS_PORTRAIT : PlayStateParams.PROCESS_LANDSCAPE);
-//                        }
-                        @Override
-                        public PlayerView setPlaySource(List<VideoijkBean> list) {
-                            return super.setPlaySource(list);
-                        }
-                    }
-                            //.setTitle("前摄像")
-                            .setProcessDurationOrientation(PlayStateParams.PROCESS_PORTRAIT)
-                            .setScaleType(PlayStateParams.fillparent) //视频界面剪裁设置
-                            .forbidTouch(false)
-                            .hideSteam(false)
-                            .hideMenu(true)
-                            .hideCenterPlayer(true)
-                            .setNetWorkTypeTie(false)
-                            .hideRotation(true) //隐藏旋转按钮
-                            .setChargeTie(true,480)//设置最长播放时间
-                            .showThumbnail(new OnShowThumbnailListener() {
-                                @Override
-                                public void onShowThumbnail(ImageView ivThumbnail) {
-//                                 加载前显示的缩略图
-                                    Glide.with(mContext)
-                                            .load("http://cn.bing.com/az/hprichbg/rb/Dongdaemun_ZH-CN10736487148_1920x1080.jpg")
-                                            .placeholder(R.color.cl_default) //加载成功之前占位图
-                                            .error(R.color.cl_error)//加载错误之后的错误图
-                                            .into(ivThumbnail);
-                                }
-                            })
-                            .setPlaySource(list)
-                            .startPlay();
+                    playVideo(1);
                     }
             break;
 

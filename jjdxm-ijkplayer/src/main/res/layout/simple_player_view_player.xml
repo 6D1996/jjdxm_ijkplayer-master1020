@@ -23,6 +23,7 @@
         <!-- 封面显示-->
         <ImageView
             android:id="@+id/iv_trumb"
+            android:src="@drawable/pic_first"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="fitXY"
