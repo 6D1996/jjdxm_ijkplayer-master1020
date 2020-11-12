@@ -10,7 +10,8 @@
     <android.support.constraint.ConstraintLayout
         android:id="@+id/constraintlayout1"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        app:layout_constraintDimensionRatio="16:9"
+        android:layout_height="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -19,7 +20,7 @@
         <include
             layout="@layout/simple_player_view_player"
             android:layout_width="match_parent"
-            android:layout_height="220dp"/>
+            android:layout_height="wrap_content"/>
     </android.support.constraint.ConstraintLayout>
 
     <android.support.constraint.ConstraintLayout
