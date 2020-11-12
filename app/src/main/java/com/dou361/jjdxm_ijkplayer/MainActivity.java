@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.Log;
@@ -24,6 +25,7 @@ import com.dou361.ijkplayer.widget.PlayStateParams;
 import com.dou361.ijkplayer.widget.PlayerView;
 import com.dou361.jjdxm_ijkplayer.utlis.MediaUtils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +40,7 @@ import okhttp3.Response;
 
 public class MainActivity extends Activity implements View.OnClickListener , MyRadioGroup.OnCheckedChangeListener {
 
+    public String hostURL="http://192.168.137.132:18086/appBackend/";
     public VideoRequest videoRequest;
     public VideoReply videoReply;
     private PlayerView player;
@@ -141,65 +144,83 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
 
     }
 
-    @OnClick({R.id.front_Click, R.id.back_Click, R.id.left_Click, R.id.right_Click,R.id.god_perspective_Click,R.id.lightController})
+    public VideoReply postVideoRequest(int videoNum){
+        videoRequest = new VideoRequest();
+        videoRequest.setUserId("6D");
+        videoRequest.setVin("test");
+        videoRequest.setVideo_type(getString(videoNum));
+        videoRequest.setServicetype("1");
+        final String videoRequestJson = JSON.toJSONString(videoRequest);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    requestTextView.setText(videoRequestJson);
+                    OkHttpClient videoClient=new OkHttpClient();
+                    Request videoRequest= new Request.Builder()
+                            .url(hostURL+"videoRequest")
+                            .post(RequestBody.create(MediaType.parse("application/json"),videoRequestJson))
+                            .build();//创造HTTP请求
+                    //执行发送的指令
+                    Response videoResponse = videoClient.newCall(videoRequest).execute();
+                    String videoResponseString=videoResponse.body().string();
+                    Log.d("Reply",videoResponseString);
+                    replyTextView.setText(videoResponseString);
+                    videoReply = JSON.parseObject(videoResponseString,VideoReply.class);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this,"請求視頻中",Toast.LENGTH_LONG).show();
+                            replyTextView.setText(videoReply.toString());
+                        }
+                    });
+                }catch (Exception e){
+                    e.printStackTrace();
+                    Log.d("POST失敗", "onClick: "+e.toString());
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this,"請求視頻！",Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
+            }
+        }).start();
+        return videoReply;
+    }
+    public void playVideo(int videoNum){
+
+        switch (videoNum){
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+            case 4:
+                break;
+            case 5:
+                break;
+            case 6:
+                break;
+            default:
+                break;
+        }
+    }
+
+
+    @OnClick({R.id.lightController})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.lightController:
                 {   
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                videoRequest = new VideoRequest();
-                                videoRequest.setUserId("6D");
-                                videoRequest.setVin("test");
-                                videoRequest.setVideo_type("1");
-                                videoRequest.setServicetype("1");
-                                String videoRequestJson = JSON.toJSONString(videoRequest);
-                                requestTextView.setText(videoRequestJson);
-                                Log.d("Request",videoRequestJson );
-                                OkHttpClient videoClient=new OkHttpClient();
-                                Request videoRequest= new Request.Builder()
-                                        .url("http://192.168.137.132:18086/appBackend/videoRequest")
-                                        .post(RequestBody.create(MediaType.parse("application/json"),videoRequestJson))
-                                        .build();//创造HTTP请求
-                                replyTextView.setText("12");
-                                //执行发送的指令
-                                Response videoResponse = videoClient.newCall(videoRequest).execute();
-                                replyTextView.setText("13");
-                                String videoResponseString=videoResponse.body().string();
-                                Log.d("Reply",videoResponseString );
-                                replyTextView.setText(videoResponseString+"\n123");
-                                videoReply = new VideoReply();
-                                videoReply = JSON.parseObject(videoResponseString,VideoReply.class);
-
-
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(MainActivity.this,"請求視頻中",Toast.LENGTH_LONG).show();
-                                        replyTextView.setText(videoReply.toString());
-                                    }
-                                });
-                            }catch (Exception e){
-                                e.printStackTrace();
-                                Log.d("POST失敗", "onClick: "+e.toString());
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(MainActivity.this,"請求視頻！",Toast.LENGTH_LONG).show();
-                                    }
-                                });
-                            }
-                        }
-                    }).start();
-
-
-                    Toast.makeText(MainActivity.this,"測試視頻",Toast.LENGTH_SHORT).show();
+//                    postVideoRequest(1);
+//                    if(videoReply.getCode()=="0051000")
+                    Toast.makeText(MainActivity.this,"請求成功！",Toast.LENGTH_SHORT).show();
                     list = new ArrayList<VideoijkBean>();
                     //有部分视频加载有问题，这个视频是有声音显示不出图像的，没有解决http://fzkt-biz.oss-cn-hangzhou.aliyuncs.com/vedio/2f58be65f43946c588ce43ea08491515.mp4
                     //这里模拟一个本地视频的播放，视频需要将testvideo文件夹的视频放到安卓设备的内置sd卡根目录中
-                    String url1 = "rtmp://150.158.176.170/live/1";
+                    String url1 = "rtmp://202.69.69.180:443/webcast/bshdlive-pc";//"rtmp://150.158.176.170/live/1";
                     String url2 = "rtmp://150.158.176.170/live/test";
                     VideoijkBean m1 = new VideoijkBean();
                     m1.setStream("原始视频");
@@ -235,7 +256,7 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                                 public void onShowThumbnail(ImageView ivThumbnail) {
 //                                 加载前显示的缩略图
                                     Glide.with(mContext)
-                                            .load("http://pic2.nipic.com/20090413/406638_125424003_2.jpg")
+                                            .load("http://cn.bing.com/az/hprichbg/rb/Dongdaemun_ZH-CN10736487148_1920x1080.jpg")
                                             .placeholder(R.color.cl_default) //加载成功之前占位图
                                             .error(R.color.cl_error)//加载错误之后的错误图
                                             .into(ivThumbnail);
@@ -244,7 +265,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                             .setPlaySource(list)
                             .startPlay();
                     }
-
             break;
 
             case R.id.back_Click:
@@ -456,6 +476,9 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         }
     }
 
+
+
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -465,6 +488,7 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         /**demo的内容，恢复系统其它媒体的状态*/
         MediaUtils.muteAudioFocus(mContext, true);
     }
+
 
     @Override
     protected void onResume() {
@@ -508,12 +532,9 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         }
     }
 
+
     @Override
     public void onCheckedChanged(MyRadioGroup group, int checkedId) {
 
     }
-
-    public void postVideoRequest(){}
-
-    public void playVideo(){}
 }
