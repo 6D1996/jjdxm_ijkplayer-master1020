@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.View;
@@ -39,8 +40,9 @@ import okhttp3.Response;
 public class MainActivity extends Activity implements View.OnClickListener , MyRadioGroup.OnCheckedChangeListener {
 
     public String hostURL="http://10.6.206.20:30549/appBackend/";
+    public CountDownTimer countDownTimer;
     public VideoRequest videoRequest;
-    public VideoReply videoReply;
+    public VideoReply videoReply,videoReply2;
     private PlayerView player;
     private Context mContext;
     private List<VideoijkBean> list;
@@ -88,10 +90,8 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
 
             /**虚拟按键的隐藏方法*/
         rootView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-
             @Override
             public void onGlobalLayout() {
-
                 //比较Activity根布局与当前布局的大小
                 int heightDiff = rootView.getRootView().getHeight() - rootView.getHeight();
                 if (heightDiff > 100) {
@@ -100,7 +100,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                 } else {
                     //大小小于100时，为不显示虚拟键盘或虚拟键盘隐藏
                     rootView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-
                 }
             }
         });
@@ -115,37 +114,24 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         videoRatioGroup.setOnCheckedChangeListener(new MyRadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(MyRadioGroup group, int checkedId) {
+                videoReply=new VideoReply("原始");
+                videoReply2=new VideoReply("融合");
+                replyTextView.setText("当前选择"+checkedId);
                 switch (checkedId){
                     case R.id.left_Click:
-                        playVideo(3);
-                        Toast leftToast =Toast.makeText(MainActivity.this, "左", Toast.LENGTH_SHORT);
-                        new ShowMyToast().showMyToast(leftToast,100);
+                        try2play(3);
                         break;
                     case R.id.right_Click:
-                        playVideo(4);
-                        Toast rightToast =Toast.makeText(MainActivity.this, "右", Toast.LENGTH_SHORT);
-                        new ShowMyToast().showMyToast(rightToast,100);
+                        try2play(4);
                         break;
                     case R.id.front_Click:
-                        videoReply=new VideoReply("6D");
-                        videoReply.initialVideoReply();
-                        videoReply = postVideoRequest(1);
-                        if(videoReply.getCode().equals("0030000")){
-                        playVideo(1);}
-                        else {
-                            Toast frontToast = Toast.makeText(MainActivity.this,"播放失败", Toast.LENGTH_SHORT);
-                            new ShowMyToast().showMyToast(frontToast, 100);
-                        }
+                        try2play(0);
                         break;
                     case R.id.back_Click:
-                        playVideo(2);
-                        Toast backToast =Toast.makeText(MainActivity.this, "后", Toast.LENGTH_SHORT);
-                        new ShowMyToast().showMyToast(backToast,100);
+                        try2play(2);
                         break;
                     case R.id.god_perspective_Click:
-                        playVideo(5);
-                        Toast godPerspectiveToast =Toast.makeText(MainActivity.this, "上帝", Toast.LENGTH_SHORT);
-                        new ShowMyToast().showMyToast(godPerspectiveToast,100);
+                        try2play(5);
                         break;
                     default:
                         Toast defualt =Toast.makeText(MainActivity.this, "上帝", Toast.LENGTH_SHORT);
@@ -155,6 +141,81 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
             }
         });
 
+    }
+
+    private void try2play(final int videoNum) {
+        videoReply.initialVideoReply();
+        videoReply2.initialVideoReply();
+        if (videoNum!=0){
+        countDownTimer=new CountDownTimer(10000,1000) {
+            int i=0;
+            @Override
+            public void onTick(long millisUntilFinished) {
+                i=i+1000;
+                replyTextView.setText("执行第"+i+"次请求："+videoReply.toString());
+                if (videoReply.getCode().equals("InitialString")){
+                    videoReply = postVideoRequest(videoNum);
+                    videoReply.setCode("00"+i);
+                }
+                else if(videoReply.getCode().equals("003000"))//请求成功播放视频取消轮询
+                {playVideo(videoNum);
+                    cancel();}
+                else videoReply.setCode("00"+i);
+            }
+
+            @Override
+            public void onFinish() {
+                replyTextView.setText("请求超时!");
+            }
+        }.start();}
+        else {//播放前视角视频时有四种情况
+            countDownTimer=new CountDownTimer(10000,1000) {
+                int i=0;
+                @Override
+                public void onTick(long millisUntilFinished) {
+                    i=i+1000;
+                    replyTextView.setText("执行第"+i+"次请求："+videoReply.toString());
+                    if (videoReply.getCode().equals("InitialString")){//原始視頻為初始數據
+                        if (videoReply2.getCode().equals("InitialString")){//均為初始數據
+                        videoReply = postVideoRequest(videoNum);
+                        videoReply2=postVideoRequest(videoNum+5);//兩個視頻都請求
+                        videoReply.setCode("00"+i);
+                        }else {//融合視頻有數據
+                            videoReply=postVideoRequest(videoNum);//繼續請求原始視頻
+                        }
+                    }
+                    else if(videoReply.getCode().equals("003000")){//原始視頻已請求
+                        videoReply2.setCode("003000");
+                            if (videoReply2.getCode().equals("InitialString")){//融合視頻為初始數據
+                                videoReply2=postVideoRequest(videoNum+5);
+                                videoReply2.setCode("00"+i);
+                            }else {//全部有數據
+                                onFinish();//對code的四種狀態進行判斷
+                                cancel();
+                            }
+                    }
+                    else videoReply.setCode("00"+i);
+                }
+
+                @Override
+                public void onFinish() {
+                    if(videoReply.getCode().equals("003000")){//原始視頻可用
+                        if (videoReply2.getCode().equals("003000")){
+                            playVideo(0);//最理想情況，同時可播倆視頻
+                        }else{
+                            playVideo(1);//融合視頻不可用，播放原始視頻
+                        }
+                    }
+                    else{//原始視頻不可用
+                        if (videoReply2.getCode().equals("003000")){
+                            playVideo(6);//只播融合視頻
+                        }else{
+                            replyTextView.setText("WRONG!");
+                        }
+                    }
+                }
+            }.start();
+        }
     }
 
     public VideoReply postVideoRequest(int videoNum){
@@ -180,20 +241,13 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                     Log.d("Reply",videoResponseString);
                     replyTextView.setText(videoResponseString);
                     videoReply = JSON.parseObject(videoResponseString,VideoReply.class);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this,"請求視頻中",Toast.LENGTH_LONG).show();
-                            replyTextView.setText(videoReply.toString());
-                        }
-                    });
                 }catch (Exception e){
                     e.printStackTrace();
                     Log.d("POST失敗", "onClick: "+e.toString());
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(MainActivity.this,"請求視頻！",Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this,"請求視頻失败！",Toast.LENGTH_LONG).show();
                         }
                     });
                 }
@@ -203,7 +257,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
     }
 
     public void playVideoUrl( String url){
-
       Toast.makeText(MainActivity.this, "請求成功！", Toast.LENGTH_SHORT).show();
       player = new PlayerView(MainActivity.this, rootView)
               .setPlaySource(url)
@@ -236,12 +289,13 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
     public void playVideo(int videoNum){
 
         switch (videoNum){
-            case 1:
+            case 0:
+                //前视角原始视频与融合视频在一个按钮，通过视频窗口内部按钮切换
                 Toast.makeText(MainActivity.this,"請求成功！",Toast.LENGTH_SHORT).show();
                 list = new ArrayList<VideoijkBean>();
                 //有部分视频加载有问题，这个视频是有声音显示不出图像的，没有解决http://fzkt-biz.oss-cn-hangzhou.aliyuncs.com/vedio/2f58be65f43946c588ce43ea08491515.mp4
                 //这里模拟一个本地视频的播放，视频需要将testvideo文件夹的视频放到安卓设备的内置sd卡根目录中
-                String url1 = "rtmp://202.69.69.180:443/webcast/bshdlive-pc";//"";//"rtmp://150.158.176.170/live/1";
+                String url1 = "http://ivi.bupt.edu.cn/hls/cctv1.m3u8";//"rtmp://150.158.176.170/live/1";
                 String url2 = "rtmp://202.69.69.180:443/webcast/bshdlive-pc";
                 VideoijkBean m1 = new VideoijkBean();
                 m1.setStream("原始视频");
@@ -252,11 +306,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                 list.add(m1);
                 list.add(m2);
                 player = new PlayerView(this, rootView) {
-                    //                        @Override
-//                        public PlayerView toggleProcessDurationOrientation() {
-////                            hideSteam(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-//                            return setProcessDurationOrientation(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? PlayStateParams.PROCESS_PORTRAIT : PlayStateParams.PROCESS_LANDSCAPE);
-//                        }
                     @Override
                     public PlayerView setPlaySource(List<VideoijkBean> list) {
                         return super.setPlaySource(list);
@@ -286,17 +335,31 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                         .setPlaySource(list)
                         .startPlay();
                 break;
+            case 1:
+                //只播原始視頻
+                playVideoUrl("http://ivi.bupt.edu.cn/hls/cctv1.m3u8");
+                break;
             case 2:
+                //后视角
                 playVideoUrl("http://ivi.bupt.edu.cn/hls/cctv2.m3u8");
                 break;
             case 3:
+                //左视角
+                playVideoUrl("http://ivi.bupt.edu.cn/hls/cctv3.m3u8");
                 break;
             case 4:
+                //右视角
+                playVideoUrl("http://ivi.bupt.edu.cn/hls/cctv4.m3u8");
                 break;
             case 5:
+                //上帝视角
+                playVideoUrl("http://ivi.bupt.edu.cn/hls/cctv5.m3u8");
                 break;
             case 6:
+                //只有融合視頻
+                playVideoUrl("http://ivi.bupt.edu.cn/hls/cctv6.m3u8");
                 break;
+
             default:
                 break;
         }
@@ -308,218 +371,10 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         switch (view.getId()) {
             case R.id.lightController:
                 {   
-                    postVideoRequest(1);
-//                    if(videoReply.getCode()=="0051000")
-                    playVideo(1);
+                    requestTextView.setText("請求開燈/關燈");
                     }
             break;
 
-            case R.id.back_Click:
-//                /**竖屏播放器*/
-//                startActivity(PlayerActivity.class);
-            {
-                list = new ArrayList<VideoijkBean>();
-                //有部分视频加载有问题，这个视频是有声音显示不出图像的，没有解决http://fzkt-biz.oss-cn-hangzhou.aliyuncs.com/vedio/2f58be65f43946c588ce43ea08491515.mp4
-                //这里模拟一个本地视频的播放，视频需要将testvideo文件夹的视频放到安卓设备的内置sd卡根目录中
-                String url1 = "http://ivi.bupt.edu.cn/hls/cctv2.m3u8";
-                String url2 = "rtmp://202.69.69.180:443/webcast/bshdlive-pc";
-                VideoijkBean m1 = new VideoijkBean();
-                m1.setStream("原始视频");
-                m1.setUrl(url1);
-                VideoijkBean m2 = new VideoijkBean();
-                m2.setStream("融合视频");
-                m2.setUrl(url2);
-                list.add(m1);
-                list.add(m2);
-                player = new PlayerView(this, rootView) {
-                    @Override
-                    public PlayerView toggleProcessDurationOrientation() {
-                        hideSteam(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                        return setProcessDurationOrientation(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? PlayStateParams.PROCESS_PORTRAIT : PlayStateParams.PROCESS_LANDSCAPE);
-                    }
-
-                    @Override
-                    public PlayerView setPlaySource(List<VideoijkBean> list) {
-                        return super.setPlaySource(list);
-                    }
-                }
-                        .setTitle("后摄像")
-                        .setProcessDurationOrientation(PlayStateParams.PROCESS_PORTRAIT)
-                        .setScaleType(PlayStateParams.fillparent)
-                        .forbidTouch(false)
-                        .hideSteam(false)
-                        .hideRotation(true) //隐藏旋转按钮
-                        .hideCenterPlayer(true)
-//                        .showThumbnail(new OnShowThumbnailListener() {
-//                            @Override
-//                            public void onShowThumbnail(ImageView ivThumbnail) {
-//                                Glide.with(mContext)
-//                                        .load("http://pic2.nipic.com/20090413/406638_125424003_2.jpg")
-//                                        .placeholder(R.color.cl_default)
-//                                        .error(R.color.cl_error)
-//                                        .into(ivThumbnail);
-//                            }
-//                        })
-                        .setPlaySource(list)
-//                        .setChargeTie(true,60)
-                        .startPlay();
-            }
-                break;
-            case R.id.left_Click:
-//                /**竖屏直播播放器*/
-//                startActivity(PlayerLiveActivity.class);
-            {
-                list = new ArrayList<VideoijkBean>();
-                //有部分视频加载有问题，这个视频是有声音显示不出图像的，没有解决http://fzkt-biz.oss-cn-hangzhou.aliyuncs.com/vedio/2f58be65f43946c588ce43ea08491515.mp4
-                //这里模拟一个本地视频的播放，视频需要将testvideo文件夹的视频放到安卓设备的内置sd卡根目录中
-                String url1 = "http://ivi.bupt.edu.cn/hls/cctv3.m3u8";
-                String url2 = "rtmp://202.69.69.180:443/webcast/bshdlive-pc";
-                VideoijkBean m1 = new VideoijkBean();
-                m1.setStream("原始视频");
-                m1.setUrl(url1);
-                VideoijkBean m2 = new VideoijkBean();
-                m2.setStream("融合视频");
-                m2.setUrl(url2);
-                list.add(m1);
-                list.add(m2);
-                player = new PlayerView(this, rootView) {
-                    @Override
-                    public PlayerView toggleProcessDurationOrientation() {
-                        hideSteam(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                        return setProcessDurationOrientation(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? PlayStateParams.PROCESS_PORTRAIT : PlayStateParams.PROCESS_LANDSCAPE);
-                    }
-
-                    @Override
-                    public PlayerView setPlaySource(List<VideoijkBean> list) {
-                        return super.setPlaySource(list);
-                    }
-                }
-                        .setTitle("左摄像")
-                        .setProcessDurationOrientation(PlayStateParams.PROCESS_PORTRAIT)
-                        .setScaleType(PlayStateParams.fillparent)
-                        .forbidTouch(false)
-                        .hideSteam(false)
-                        .hideRotation(true) //隐藏旋转按钮
-                        .hideCenterPlayer(true)
-//                        .showThumbnail(new OnShowThumbnailListener() {
-//                            @Override
-//                            public void onShowThumbnail(ImageView ivThumbnail) {
-//                                Glide.with(mContext)
-//                                        .load("http://pic2.nipic.com/20090413/406638_125424003_2.jpg")
-//                                        .placeholder(R.color.cl_default)
-//                                        .error(R.color.cl_error)
-//                                        .into(ivThumbnail);
-//                            }
-//                        })
-                        .setPlaySource(list)
-//                        .setChargeTie(true,60)
-                        .startPlay();
-            }
-                break;
-            case R.id.right_Click:
-//                /**ijkplayer原生的播放器*/
-//                startActivity(OriginPlayerActivity.class);
-            {
-                list = new ArrayList<VideoijkBean>();
-                //有部分视频加载有问题，这个视频是有声音显示不出图像的，没有解决http://fzkt-biz.oss-cn-hangzhou.aliyuncs.com/vedio/2f58be65f43946c588ce43ea08491515.mp4
-                //这里模拟一个本地视频的播放，视频需要将testvideo文件夹的视频放到安卓设备的内置sd卡根目录中
-                String url1 = "http://ivi.bupt.edu.cn/hls/cctv4.m3u8";
-                String url2 = "rtmp://202.69.69.180:443/webcast/bshdlive-pc";
-                VideoijkBean m1 = new VideoijkBean();
-                m1.setStream("原始视频");
-                m1.setUrl(url1);
-                VideoijkBean m2 = new VideoijkBean();
-                m2.setStream("融合视频");
-                m2.setUrl(url2);
-                list.add(m1);
-                list.add(m2);
-                player = new PlayerView(this, rootView) {
-                    @Override
-                    public PlayerView toggleProcessDurationOrientation() {
-                        hideSteam(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                        return setProcessDurationOrientation(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? PlayStateParams.PROCESS_PORTRAIT : PlayStateParams.PROCESS_LANDSCAPE);
-                    }
-
-                    @Override
-                    public PlayerView setPlaySource(List<VideoijkBean> list) {
-                        return super.setPlaySource(list);
-                    }
-                }
-                        .setTitle("右摄像")
-                        .setProcessDurationOrientation(PlayStateParams.PROCESS_PORTRAIT)
-                        .setScaleType(PlayStateParams.fillparent)
-                        .forbidTouch(false)
-                        .hideSteam(false)
-                        .hideRotation(true) //隐藏旋转按钮
-                        .hideCenterPlayer(true)
-//                        .showThumbnail(new OnShowThumbnailListener() {
-//                            @Override
-//                            public void onShowThumbnail(ImageView ivThumbnail) {
-//                                Glide.with(mContext)
-//                                        .load("http://pic2.nipic.com/20090413/406638_125424003_2.jpg")
-//                                        .placeholder(R.color.cl_default)
-//                                        .error(R.color.cl_error)
-//                                        .into(ivThumbnail);
-//                            }
-//                        })
-                        .setPlaySource(list)
-//                        .setChargeTie(true,60)
-                        .startPlay();
-            }
-                break;
-            case R.id.god_perspective_Click:
-//                /**半屏播放器*/
-//                startActivity(HPlayerActivity.class);
-            {
-                list = new ArrayList<VideoijkBean>();
-                //有部分视频加载有问题，这个视频是有声音显示不出图像的，没有解决http://fzkt-biz.oss-cn-hangzhou.aliyuncs.com/vedio/2f58be65f43946c588ce43ea08491515.mp4
-                //这里模拟一个本地视频的播放，视频需要将testvideo文件夹的视频放到安卓设备的内置sd卡根目录中
-                String url1 = "http://ivi.bupt.edu.cn/hls/cctv7.m3u8";
-                String url2 = "rtmp://202.69.69.180:443/" +
-                        "webcast/bshdlive-pc";
-                VideoijkBean m1 = new VideoijkBean();
-                m1.setStream("原始视频");
-                m1.setUrl(url1);
-                VideoijkBean m2 = new VideoijkBean();
-                m2.setStream("融合视频");
-                m2.setUrl(url2);
-                list.add(m1);
-                list.add(m2);
-                player = new PlayerView(this, rootView) {
-                    @Override
-                    public PlayerView toggleProcessDurationOrientation() {
-                        hideSteam(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                        return setProcessDurationOrientation(getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? PlayStateParams.PROCESS_PORTRAIT : PlayStateParams.PROCESS_LANDSCAPE);
-                    }
-
-                    @Override
-                    public PlayerView setPlaySource(List<VideoijkBean> list) {
-                        return super.setPlaySource(list);
-                    }
-                }
-                        .setTitle("上帝视角")
-                        .setProcessDurationOrientation(PlayStateParams.PROCESS_PORTRAIT)
-                        .setScaleType(PlayStateParams.fillparent)
-                        .forbidTouch(false)
-                        .hideSteam(false)
-                        .hideMenu(false)
-                        .hideRotation(true) //隐藏旋转按钮
-                        .hideCenterPlayer(true)
-//                        .showThumbnail(new OnShowThumbnailListener() {
-//                            @Override
-//                            public void onShowThumbnail(ImageView ivThumbnail) {
-//                                Glide.with(mContext)
-//                                        .load("http://pic2.nipic.com/20090413/406638_125424003_2.jpg")
-//                                        .placeholder(R.color.cl_default)
-//                                        .error(R.color.cl_error)
-//                                        .into(ivThumbnail);
-//                            }
-//                        })
-                        .setPlaySource(list)
-//                        .setChargeTie(true,60)
-                        .startPlay();
-            }
-            break;
         }
     }
 
