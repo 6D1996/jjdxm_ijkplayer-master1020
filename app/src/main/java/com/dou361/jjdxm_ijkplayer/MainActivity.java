@@ -3,7 +3,6 @@ package com.dou361.jjdxm_ijkplayer;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -37,12 +36,15 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+import static android.content.ContentValues.TAG;
+
 public class MainActivity extends Activity implements View.OnClickListener , MyRadioGroup.OnCheckedChangeListener {
 
     public String hostURL="http://10.6.206.20:30549/appBackend/";
     public CountDownTimer countDownTimer;
     public VideoRequest videoRequest;
-    public VideoReply videoReply,videoReply2;
+    public VideoReply videoReply,videoReply2,videoReplyMethod;
+    public String videoResponseString;//视频Post请求返回数据
     private PlayerView player;
     private Context mContext;
     private List<VideoijkBean> list;
@@ -88,6 +90,9 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         requestTextView=findViewById(R.id.requestTextView);
 
 
+
+
+
             /**虚拟按键的隐藏方法*/
         rootView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
@@ -116,6 +121,7 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
             public void onCheckedChanged(MyRadioGroup group, int checkedId) {
                 videoReply=new VideoReply("原始");
                 videoReply2=new VideoReply("融合");
+
                 replyTextView.setText("当前选择"+checkedId);
                 switch (checkedId){
                     case R.id.left_Click:
@@ -140,29 +146,35 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                 }
             }
         });
-
     }
 
     private void try2play(final int videoNum) {
         videoReply.initialVideoReply();
         videoReply2.initialVideoReply();
+        Log.d(TAG, "Initial: videoReply1："+videoReply.toString()+"\nvideoReply2："+videoReply2.toString());
+
         if (videoNum!=0){
         countDownTimer=new CountDownTimer(10000,1000) {
             int i=0;
             @Override
             public void onTick(long millisUntilFinished) {
-                i=i+1000;
+                i=i+1;
                 replyTextView.setText("执行第"+i+"次请求："+videoReply.toString());
                 if (videoReply.getCode().equals("InitialString")){
-                    videoReply = postVideoRequest(videoNum);
-                    videoReply.setCode("00"+i);
+                    String replyOriginalString=postVideoRequest(videoNum);
+                    if(replyOriginalString!=null){
+                        //当请求数据不为空时，设置videoReply类
+                        videoReply = JSON.parseObject(replyOriginalString,VideoReply.class);}
+
                 }
-                else if(videoReply.getCode().equals("003000"))//请求成功播放视频取消轮询
+                else if(videoReply.getCode().equals("0030000"))//请求成功播放视频取消轮询
                 {playVideo(videoNum);
                     cancel();}
-                else videoReply.setCode("00"+i);
+                else
+                {
+                    replyTextView.setText("播放错误");
+                }
             }
-
             @Override
             public void onFinish() {
                 replyTextView.setText("请求超时!");
@@ -173,41 +185,55 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                 int i=0;
                 @Override
                 public void onTick(long millisUntilFinished) {
-                    i=i+1000;
+                    i=i+1;
                     replyTextView.setText("执行第"+i+"次请求："+videoReply.toString());
                     if (videoReply.getCode().equals("InitialString")){//原始視頻為初始數據
                         if (videoReply2.getCode().equals("InitialString")){//均為初始數據
-                        videoReply = postVideoRequest(videoNum);
-                        videoReply2=postVideoRequest(videoNum+5);//兩個視頻都請求
-                        videoReply.setCode("00"+i);
+                            String replyOriginalFront=postVideoRequest(videoNum+1);//VideoNum是0，请求的是原始视频1和融合视频6
+                            if(replyOriginalFront!=null){
+                            videoReply = JSON.parseObject(replyOriginalFront,VideoReply.class);
+                            Log.d(TAG, "onTick: replyOriginalFront"+videoReply.toString());}
+
+                            String replyMergeFront=postVideoRequest(videoNum+6);//VideoNum是0，请求的是原始视频1和融合视频6
+                            if(replyMergeFront!=null){
+                            videoReply2 = JSON.parseObject(replyMergeFront,VideoReply.class);//兩個視頻都請求
+                            Log.d(TAG, "onTick: replyMergeFront"+videoReply2.toString());}
+//                        videoReply.setCode("00"+i);
                         }else {//融合視頻有數據
-                            videoReply=postVideoRequest(videoNum);//繼續請求原始視頻
+                            String replyOriginalRetry = postVideoRequest(videoNum+1);
+                            if(replyOriginalRetry!=null){
+                            videoReply = JSON.parseObject(replyOriginalRetry,VideoReply.class);//繼續請求原始視頻
+                            Log.d(TAG, "onTick: 融合视频成功，原始失败");}
                         }
                     }
-                    else if(videoReply.getCode().equals("003000")){//原始視頻已請求
-                        videoReply2.setCode("003000");
+                    else {//原始視頻已請求数据
                             if (videoReply2.getCode().equals("InitialString")){//融合視頻為初始數據
-                                videoReply2=postVideoRequest(videoNum+5);
-                                videoReply2.setCode("00"+i);
+                                String replyMergeRetry=postVideoRequest(videoNum+6);
+                                if(replyMergeRetry!=null){
+                                videoReply2 = JSON.parseObject(replyMergeRetry,VideoReply.class);
+                                Log.d(TAG, "onTick: 原始视频成功，融合失败");}
+//                                videoReply2.setCode("00"+i);
                             }else {//全部有數據
+                                Log.d(TAG, i+"onTick: videoReply1："+videoReply.toString()+"\nvideoReply2："+videoReply2.toString());
                                 onFinish();//對code的四種狀態進行判斷
                                 cancel();
                             }
                     }
-                    else videoReply.setCode("00"+i);
                 }
+
+
 
                 @Override
                 public void onFinish() {
-                    if(videoReply.getCode().equals("003000")){//原始視頻可用
-                        if (videoReply2.getCode().equals("003000")){
+                    if(videoReply.getCode().equals("0030000")){//原始視頻可用
+                        if (videoReply2.getCode().equals("0030000")){
                             playVideo(0);//最理想情況，同時可播倆視頻
                         }else{
                             playVideo(1);//融合視頻不可用，播放原始視頻
                         }
                     }
                     else{//原始視頻不可用
-                        if (videoReply2.getCode().equals("003000")){
+                        if (videoReply2.getCode().equals("0030000")){
                             playVideo(6);//只播融合視頻
                         }else{
                             replyTextView.setText("WRONG!");
@@ -218,7 +244,7 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
         }
     }
 
-    public VideoReply postVideoRequest(int videoNum){
+    public String postVideoRequest(int videoNum){
         videoRequest = new VideoRequest();
         videoRequest.setUserId("6D");
         videoRequest.setVin("test");
@@ -237,10 +263,10 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                             .build();//创造HTTP请求
                     //执行发送的指令
                     Response videoResponse = videoClient.newCall(videoRequest).execute();
-                    String videoResponseString=videoResponse.body().string();
+                    videoResponseString=videoResponse.body().string();
                     Log.d("Reply",videoResponseString);
                     replyTextView.setText(videoResponseString);
-                    videoReply = JSON.parseObject(videoResponseString,VideoReply.class);
+//                    videoReply2 = JSON.parseObject(videoResponseString,VideoReply.class);
                 }catch (Exception e){
                     e.printStackTrace();
                     Log.d("POST失敗", "onClick: "+e.toString());
@@ -253,7 +279,7 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
                 }
             }
         }).start();
-        return videoReply;
+        return videoResponseString;
     }
 
     public void playVideoUrl( String url){
@@ -269,7 +295,7 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
               .hideCenterPlayer(false)
               .setNetWorkTypeTie(false)
               .hideRotation(true) //隐藏旋转按钮
-              .setChargeTie(true, 10)//设置最长播放时间
+              .setChargeTie(true, 480)//设置最长播放时间
               .showThumbnail(new OnShowThumbnailListener() {
                   @Override
                   public void onShowThumbnail(ImageView ivThumbnail) {
@@ -283,7 +309,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
               })
               .setPlaySource(list)
               .startPlay();
-
     }
 
     public void playVideo(int videoNum){
@@ -377,8 +402,6 @@ public class MainActivity extends Activity implements View.OnClickListener , MyR
 
         }
     }
-
-
 
 
     @Override
